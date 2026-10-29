@@ -54,7 +54,7 @@ in `hooks/register.ts`.
 | 🏢 Enforce it for the whole org | [ADMIN-SETUP.md](ADMIN-SETUP.md) |
 
 ```bash
-claude plugin marketplace add mvakeel-vs/claude-guardrails
+claude plugin marketplace add iter-vakeel/claude-guardrails
 claude plugin install guardrails-core@claude-guardrails
 ```
 

@@ -24,7 +24,7 @@ flowchart TD
 
 ## ✅ Before you start
 
-- [ ] Repo moved from `mvakeel-vs/claude-guardrails` into the company GitHub org
+- [ ] Repo moved from `iter-vakeel/claude-guardrails` into the company GitHub org
 - [ ] Branch protection on `main`: PR + passing CI + code-owner review, no force push
 - [ ] Claude GitHub App installed with access to the repo
 - [ ] Plan includes **Plugins & skills** and **Claude Code > Managed settings**
