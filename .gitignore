@@ -1,0 +1,10 @@
+# Local backups
+*.bak
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+
+# Dependencies (none today, kept for safety)
+node_modules/

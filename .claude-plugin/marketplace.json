@@ -1,0 +1,7 @@
+{
+  "name": "claude-guardrails",
+  "owner": { "name": "Organization Claude Code Security" },
+  "plugins": [
+    { "name": "guardrails-core", "source": "./plugins/guardrails-core", "description": "Organization-wide security guardrails for Claude Code: hard blocks plus risk acceptance before secrets are used (mandatory)" }
+  ]
+}

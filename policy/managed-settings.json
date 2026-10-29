@@ -1,0 +1,63 @@
+{
+  "forceRemoteSettingsRefresh": true,
+  "permissions": {
+    "disableBypassPermissionsMode": "disable",
+    "deny": [
+      "Bash(kubectl * --context *prod*)", "Bash(kubectl config use-context *prod*)",
+      "Bash(aws * --profile *prod*)", "Bash(aws secretsmanager get-secret-value*)",
+      "Bash(aws ssm get-parameter* --with-decryption*)",
+      "Bash(terraform apply*)",
+      "Bash(terraform destroy*)",
+      "Bash(terraform state *)",
+      "Bash(psql *prod*)",
+      "Bash(ssh *prod*)", "Bash(scp *prod*)",
+
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * main)",
+      "Bash(git push * develop)",
+      "Bash(git push * master)",
+      "Bash(git config --global *)",
+
+      "Bash(npm publish*)",
+      "Bash(mvn deploy*)",
+      "Bash(gradle publish*)",
+      "Bash(docker push *)",
+      "Bash(gh release create*)",
+
+      "Bash(sudo *)",
+      "Bash(chmod 777 *)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)",
+      "Bash(shutdown *)",
+
+      "Bash(*DROP TABLE*)",
+      "Bash(*drop table*)",
+      "Bash(*Drop Table*)",
+      "Bash(*DROP SCHEMA*)",
+      "Bash(*drop schema*)",
+      "Bash(*DROP DATABASE*)",
+      "Bash(*drop database*)",
+      "Bash(*TRUNCATE*)",
+      "Bash(*truncate*)",
+      "Bash(*ALTER TABLE*)",
+      "Bash(*alter table*)",
+      "Bash(*Alter Table*)",
+      "Bash(*ALTER SCHEMA*)",
+      "Bash(*alter schema*)",
+      "Bash(*ADD COLUMN*)",
+      "Bash(*add column*)",
+      "Bash(*DROP COLUMN*)",
+      "Bash(*drop column*)",
+      "Bash(*ALTER COLUMN*)", "Bash(*alter column*)",
+      "Bash(*RENAME COLUMN*)", "Bash(*rename column*)",
+      "Bash(*CREATE TABLE*)", "Bash(*create table*)",
+      "Bash(*CREATE INDEX*)", "Bash(*create index*)",
+      "Bash(*DROP INDEX*)", "Bash(*drop index*)",
+      "Bash(*GRANT *)", "Bash(*REVOKE *)",
+      "Bash(*DELETE FROM*)", "Bash(*delete from*)"
+    ]
+  },
+  "claudeMd": "## ITERFORGE engineering standards\n- Schema changes only via Flyway/Liquibase migrations in a reviewed PR. ddl-auto = validate or none.\n- Never hard-code secrets; use ${ENV_VAR} placeholders. Real values live in AWS Secrets Manager.\n- Never connect to prod databases or prod kube contexts from a laptop.\n- Branch from develop, open a PR; never push to main/develop or force push.\n- guardrails-core asks before risky actions (red or yellow dialog). Don't work around it; if the user cancels, don't retry another way; explain the safe alternative.\n\n## Sensitive content\n- You may read files, logs and output that contain secrets, customer PII or confidential info, and continue the task.\n- Never repeat the values in replies, code, commits, logs or files; refer to them by kind and location (\"customer email in app.log\", \"API_TOKEN in .env\").\n- If a real credential is somewhere it shouldn't be, name the file and the kind of secret, and recommend rotating it."
+}

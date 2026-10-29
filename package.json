@@ -1,0 +1,10 @@
+{
+  "name": "claude-guardrails",
+  "private": true,
+  "description": "ITERFORGE organization-wide security guardrails for Claude Code",
+  "license": "UNLICENSED",
+  "scripts": {
+    "validate": "claude plugin validate plugins/guardrails-core",
+    "test": "claude plugin validate plugins/guardrails-core && claude plugin test plugins/guardrails-core"
+  }
+}

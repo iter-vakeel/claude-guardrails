@@ -1,0 +1,25 @@
+name: guard-tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      # Claude Code CLI: validates the plugin and runs its tests against the real hooks engine
+      - run: npm install -g @anthropic-ai/claude-code
+      - run: npm test
