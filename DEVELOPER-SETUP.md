@@ -46,16 +46,25 @@ claude plugin marketplace add mvakeel-vs/claude-guardrails
 claude plugin install guardrails-core@claude-guardrails
 ```
 
-**B. Enforced** (Administrator, instead of A): writes the org policy + plugin to the machine-wide file.
+**B. Enforced** (instead of A): put the org policy in a machine-wide file, by hand.
 
-```powershell
-$p = Get-Content C:\projects\POC\claude-guardrails\policy\managed-settings.json -Raw | ConvertFrom-Json
-$p | Add-Member extraKnownMarketplaces @{ 'claude-guardrails' = @{
-  source = @{ source = 'github'; repo = 'mvakeel-vs/claude-guardrails' }; autoUpdate = $true } }
-$p | Add-Member enabledPlugins @{ 'guardrails-core@claude-guardrails' = $true }
-New-Item -ItemType Directory -Force "C:\Program Files\ClaudeCode" | Out-Null
-[IO.File]::WriteAllText("C:\Program Files\ClaudeCode\managed-settings.json", ($p | ConvertTo-Json -Depth 10))
-```
+1. In File Explorer, create the folder `C:\Program Files\ClaudeCode` (Windows asks for admin, click **Continue**).
+2. Start menu → type **Notepad** → right-click → **Run as administrator**.
+3. **File → Open** `C:\projects\POC\claude-guardrails\policy\managed-settings.json`.
+4. Right after the first `{` on line 1, paste these lines:
+
+   ```json
+     "extraKnownMarketplaces": {
+       "claude-guardrails": { "source": { "source": "github", "repo": "mvakeel-vs/claude-guardrails" }, "autoUpdate": true }
+     },
+     "enabledPlugins": { "guardrails-core@claude-guardrails": true },
+   ```
+
+5. **File → Save As** → folder `C:\Program Files\ClaudeCode`, file name `managed-settings.json`,
+   *Save as type* **All files**, *Encoding* **UTF-8** → **Save**.
+
+> Keep the name exactly `managed-settings.json` (not `.json.txt`). Normal users can't edit this folder,
+> which is what makes it enforced. To undo, delete the file.
 
 ## 4️⃣ Restart Claude Code and check
 
