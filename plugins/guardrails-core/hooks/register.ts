@@ -9,10 +9,10 @@
 //   🔴 high   = a secret leaves the machine, or is hardcoded into a command or a file
 //   🟡 medium = a secret used locally (incl. editing a secret file), or PII sent outside
 //
-// Session start: Responsible AI Use banner for the developer, team standards for Claude.
+// Session start: Responsible AI Use banner for the developer (banner.tsx), team standards for Claude.
 import type { Register } from 'claude-code'
 
-import { BANNER } from './standards'
+import { registerBanner } from './banner'
 
 // ================= POLICY =================
 const POLICY = 'ACTION BLOCKED - PROHIBITED BY ITERFORGE SECURITY POLICY. This action is not permitted. Do not try to work around this control. Reason: '
@@ -401,13 +401,9 @@ export const register: Register = on => {
     next.called ? next(e) : { deny: POLICY + 'the guardrail check failed (' + next.error.kind + '), so this action was paused for safety. Try again or ask the user.' }
   )
 
-  // ---- session start: banner for the developer ----
+  // ---- session start: banner for the developer (banner.tsx) ----
   // The standards for Claude come from the org policy's claudeMd (policy/managed-settings.json):
   // Claude Code's built-in security plugin passes classic.SessionStart and prompt.context on past
   // user plugins, so a plugin cannot add them to Claude's context itself.
-  on('session.start', async ($, e, next) => {
-    const result = await next(e)
-    if (e.isInteractive) $.ui.log(BANNER)
-    return result
-  })
+  registerBanner(on)
 }

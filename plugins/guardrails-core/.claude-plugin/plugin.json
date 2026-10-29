@@ -1,5 +1,8 @@
 {
   "name": "guardrails-core",
   "description": "Organization-wide Claude Code security guardrails: hard blocks for ORM auto-schema, destructive migrations, direct DB changes, force push and protected branches; risk acceptance (red/yellow) before secrets or personal data are used",
-  "author": { "name": "ITERFORGE" }
+  "author": {
+    "name": "ITERFORGE"
+  },
+  "types": "./types/index.d.ts"
 }
