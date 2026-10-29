@@ -22,7 +22,7 @@ flowchart LR
 claude --version     # 2.1.296+   (else: claude update)
 gh auth status       # logged in  (else: gh auth login)
 gh auth setup-git
-gh repo clone mvakeel-vs/claude-guardrails C:\projects\POC\claude-guardrails
+gh repo clone iter-vakeel/claude-guardrails C:\projects\POC\claude-guardrails
 ```
 
 ## 2️⃣ Remove old copies
@@ -42,7 +42,7 @@ claude plugin disable guardrails-core@synced    # old Node.js version from claud
 **A. Quick**
 
 ```powershell
-claude plugin marketplace add mvakeel-vs/claude-guardrails
+claude plugin marketplace add iter-vakeel/claude-guardrails
 claude plugin install guardrails-core@claude-guardrails
 ```
 
@@ -55,7 +55,7 @@ claude plugin install guardrails-core@claude-guardrails
 
    ```json
      "extraKnownMarketplaces": {
-       "claude-guardrails": { "source": { "source": "github", "repo": "mvakeel-vs/claude-guardrails" }, "autoUpdate": true }
+       "claude-guardrails": { "source": { "source": "github", "repo": "iter-vakeel/claude-guardrails" }, "autoUpdate": true }
      },
      "enabledPlugins": { "guardrails-core@claude-guardrails": true },
    ```
