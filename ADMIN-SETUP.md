@@ -67,7 +67,7 @@ Run on 2-3 machines (Windows and Mac) while the plugin is **Available to install
 | 7 | Merge a small rule change | Reaches laptops 🔎 auto or after re-sync | Document the re-sync |
 | 8 | VS Code, JetBrains, desktop app, Cowork | Same dialogs | Note the surface |
 | 9 | Machine with no GitHub login, behind VPN | Works | Network exceptions / support |
-| 10 | Mac (no PowerShell tool): `/status` | Managed settings loaded, Claude Code starts normally | Remove the `PowerShell(...)` rules from the Mac policy copy |
+| 10 | Mac (no PowerShell tool): `/status` | Managed settings loaded, Claude Code starts normally | Stop rollout. Macs then need a policy without `PowerShell(...)` rules: per-OS delivery (MDM or a file-based managed-settings.json per OS) or drop the PowerShell denies. Decide before going org-wide |
 
 ## 4️⃣ Change, undo, upgrade
 
