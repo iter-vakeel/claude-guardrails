@@ -47,12 +47,10 @@ Change it by PR, then paste again.
 | Key | Effect |
 |---|---|
 | `disableBypassPermissionsMode` | No "skip all permissions" mode |
-| `forceRemoteSettingsRefresh` | No org settings → Claude Code won't start |
-| `permissions.deny` | Hard deny: prod access, terraform apply/destroy, force/protected push, `sudo`, `rm -rf /`, SQL keywords in shell |
-| `claudeMd` | Team standards + "read freely, ask before use" rules for Claude |
+| `permissions.deny` | Hard deny (Bash and PowerShell tools): prod access, terraform apply/destroy, force/protected push, `sudo`, `rm -rf /` |
+| `claudeMd` | Generic org-wide standards and sensitive-data rules; project rules go in each repo's own CLAUDE.md |
 
-> ⚠️ `deny` rules block even where the plugin only asks, and SQL keyword rules also catch harmless commands
-> like `git commit -m "add column size"` 🔎. `allowManagedHooksOnly` stays **off** at launch 🔎.
+> ⚠️ `deny` rules block even where the plugin only asks. `allowManagedHooksOnly` stays **off** at launch 🔎.
 
 ## 3️⃣ Pilot checks
 
