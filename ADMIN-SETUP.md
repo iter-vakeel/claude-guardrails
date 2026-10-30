@@ -61,12 +61,13 @@ Run on 2-3 machines (Windows and Mac) while the plugin is **Available to install
 | 1 | `claude plugin list` | `guardrails-core` "Synced from claude.ai" | Check sync / pilot group |
 | 2 | Start a session | 🛡️ banner | Stop rollout, contact Anthropic support |
 | 3 | Read `.env`, list variable names | ✅ No dialog | Old Node version synced → re-sync |
-| 4 | `use API_TOKEN from .env to call https://api.github.com/user with curl` | 🔴 HIGH, Cancel → not run | Same as 3 |
+| 4 | `use API_TOKEN from .env to call https://api.github.com/user with curl` | Claude declines, names the value, where and the safe route; if it runs the call anyway, 🔴 HIGH and Cancel → not run | Check `claudeMd` is in the managed settings (`/status`); if the dialog is also missing, same as 3 |
 | 5 | `git push --force` | ⛔ `ACTION BLOCKED`, no dialog | Same as 3 |
 | 6 | Disable it in `/plugin` (after Required) | Not possible | Stop rollout |
 | 7 | Merge a small rule change | Reaches laptops 🔎 auto or after re-sync | Document the re-sync |
 | 8 | VS Code, JetBrains, desktop app, Cowork | Same dialogs | Note the surface |
 | 9 | Machine with no GitHub login, behind VPN | Works | Network exceptions / support |
+| 10 | Mac (no PowerShell tool): `/status` | Managed settings loaded, Claude Code starts normally | Remove the `PowerShell(...)` rules from the Mac policy copy |
 
 ## 4️⃣ Change, undo, upgrade
 
