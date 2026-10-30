@@ -95,3 +95,8 @@ test('values that contain a field word are still personal data', async () => {
 test('a field key at line start in stringified output is learned', async () => {
   expect(await after(JSON.stringify(`x\nfirstName: ${NAME}`), sendOut(NAME))).toMatchObject({ kind: 'ask' })
 })
+
+test('self-assignments and type annotations of a field name are not learned', async () => {
+  const v = await after('this.address = address;\naddress: Address;', `curl ${OUT}/customer/address`)
+  expect(v).toEqual({ kind: 'pass' })
+})

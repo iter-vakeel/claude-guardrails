@@ -313,7 +313,7 @@ export function learn(text: string, source: string, mem: Memory) {
     const { k, q, v: bare } = m.groups as { k: string; q?: string; v?: string }
     const v = q ?? bare ?? ''
     const cls = classify(k)
-    if (!cls || !PII_FIELD.test(cls) || v.length < 6 || NOT_VALUE.test(v) || CODE_LIKE.test(v) || (/^[a-z_]\w*$/i.test(v) && /[a-z][A-Z_]|_/.test(v) && classify(v))) continue
+    if (!cls || !PII_FIELD.test(cls) || v.length < 6 || NOT_VALUE.test(v) || CODE_LIKE.test(v) || (/^[a-z_]\w*$/i.test(v) && classify(v) && (/[a-z][A-Z_]|_/.test(v) || k.toLowerCase().endsWith(v.toLowerCase())))) continue
     if (cls === 'email' && IGNORE_PII.test(v)) continue
     if (mem.tracked.has(v) || mem.tracked.size >= MAX_TRACKED) continue
     const label = 'Personal data (' + k + ')'
