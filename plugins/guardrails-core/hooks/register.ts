@@ -13,7 +13,7 @@
 import type { Register } from 'claude-code'
 
 import { registerBanner } from './banner'
-import { MASKED_TOOLS, redactResult } from './redact'
+import { classify, MASKED_TOOLS, redactResult } from './redact'
 
 // ================= POLICY =================
 const POLICY = 'ACTION BLOCKED - PROHIBITED BY ITERFORGE SECURITY POLICY. This action is not permitted. Do not try to work around this control. Reason: '
@@ -38,6 +38,10 @@ const SECRET_FILE_SAFE   = /\.env\.(example|sample|template)$/i
 const SENSITIVE_FILE_REF = /(^|[\s"'=\/\\(<])(\.env(\.(?!example|sample|template)[\w.-]+)?|application-prod\.(properties|ya?ml)|credentials|id_rsa|id_ed25519|secrets\/[\w.\/-]*|[\w.-]+\.(pem|key|pfx|p12|jks|keystore))(?=$|[\s"';|&)>])/i
 
 // secret-looking variables: $API_TOKEN, ${DB_PASSWORD}, $env:AWS_SECRET_ACCESS_KEY
+// application*.properties / .yml / .yaml (any profile): counts only in an outbound or substituting command
+const APP_CONFIG_REF = /(^|[\s"'=\/\(<])application[\w.-]*\.(properties|ya?ml)(?=$|[\s"';|&)>])/i
+const SUBSTITUTION   = /\$\(|`|</
+
 const SECRET_VAR_REF = /\$(env:)?\{?[A-Za-z_0-9]*(TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|ACCESS_?KEY|PRIVATE_?KEY|CREDENTIAL)[A-Za-z_0-9]*\}?/i
 
 // ================= DETECTORS =================
@@ -55,6 +59,10 @@ const DETECTORS: [string, string, RegExp][] = [
   ['secret', 'Password/secret value', /\b[\w.-]*(?:password|passwd|pwd|secret|api[_-]?key|access[_-]?token)\s*[=:]\s*["']?(?!\$\{)(?<v>[^\s"'$,;\\]{8,})/gi],
   ['pii',    'Email address',         /\b(?<v>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g],
   ['pii',    'US SSN',                /\b(?<v>\d{3}-\d{2}-\d{4})\b/g],
+  // 13-16 digits, first 3-6, optional single space/dash between digits; learn() applies the Luhn check
+  ['pii',    'Card number',           /(?<!\d)(?<v>[3-6](?:[ -]?\d){12,15})(?!\d)/g],
+  // US style with separators, or E.164; 10 bare digits (IDs) do not match
+  ['pii',    'Phone number',          /(?<![\w+-])(?<v>(?:\+?1[ .-]?)?(?:\(\d{3}\)[ .-]?|\d{3}[ .-])\d{3}[ .-]\d{4}|\+\d{11,14})(?!\d)/g],
 ]
 
 // ================= TYPES =================
@@ -170,6 +178,8 @@ function secretUse(call: Record<string, any>, c: { tool: string; path: string; c
     for (const [name, full] of mem.secretFiles) if (c.cmd.includes(name)) { hits.push('values from ' + full); secretUsed = true }
     const f = c.cmd.match(SENSITIVE_FILE_REF)
     if (f) { hits.push('values from sensitive file ' + f[2]); secretUsed = true }
+    const a = (outbound || SUBSTITUTION.test(c.cmd)) && c.cmd.match(APP_CONFIG_REF)
+    if (a) { hits.push('values from sensitive file ' + a[0].replace(/^[\s"'=\/\(<]/, '')); secretUsed = true }
     const v = c.cmd.match(SECRET_VAR_REF)
     if (v) { hits.push('secret variable ' + v[0]); secretUsed = true }
   }
@@ -280,11 +290,35 @@ export function learn(text: string, source: string, mem: Memory) {
       const v = (m.groups && m.groups.v) || m[0]
       if (!v || v.length < 6) continue
       if (kind === 'pii' && IGNORE_PII.test(v)) continue
+      if (label === 'Card number' && !luhn(v)) continue
       if (!mem.tracked.has(v)) mem.tracked.set(v, { kind, label, source })
       found.push([kind, label])
     }
   }
+  // personal-data fields: key: value, key=value, "key": "value" (also JSON-escaped); secret fields are in DETECTORS
+  const FIELD = /(?<k>[A-Za-z_][\w.-]*)\\?["']?\s*[:=]\s*\\?["']?(?<v>[^\s"'\\,;]+)/g
+  const PII_FIELD = /^(name|email|phone|address|card|dob|govid|zip)$/
+  for (const m of text.matchAll(FIELD)) {
+    const { k, v } = m.groups as { k: string; v: string }
+    const cls = classify(k)
+    if (!cls || !PII_FIELD.test(cls) || v.length < 6 || /^(\[|\$\{|null$|true$|false$)/i.test(v)) continue
+    if (cls === 'email' && IGNORE_PII.test(v)) continue
+    const label = 'Personal data (' + k + ')'
+    if (!mem.tracked.has(v)) mem.tracked.set(v, { kind: 'pii', label, source })
+    found.push(['pii', label])
+  }
   return found
+}
+
+function luhn(v: string) {
+  const d = v.replace(/\D/g, '')
+  let sum = 0
+  for (let i = 0; i < d.length; i++) {
+    let n = +d[d.length - 1 - i]
+    if (i % 2) { n *= 2; if (n > 9) n -= 9 }
+    sum += n
+  }
+  return sum % 10 === 0
 }
 
 function summarize(found: [string, string][]) {
