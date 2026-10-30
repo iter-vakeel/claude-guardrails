@@ -39,8 +39,18 @@ const SENSITIVE_FILE_REF = /(^|[\s"'=\/\\(<])(\.env(\.(?!example|sample|template
 
 // secret-looking variables: $API_TOKEN, ${DB_PASSWORD}, $env:AWS_SECRET_ACCESS_KEY
 // application*.properties / .yml / .yaml (any profile): counts only in an outbound or substituting command
-const APP_CONFIG_REF = /(^|[\s"'=\/\(<])application[\w.-]*\.(properties|ya?ml)(?=$|[\s"';|&)>])/i
-const SUBSTITUTION   = /\$\(|`|</
+const APP_CONFIG_REF = /(^|[\s"'=\/\\(<@])application[\w.-]*\.(properties|ya?ml)(?=$|[\s"';|&)>])/i
+const SUBSTITUTION   = /\$\(|`|<(?!<)/
+// outbound for the application-config check: a git push or gh call to the team's own remote is normal
+const APP_OUTBOUND   = /\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm|scp|sftp|ssh|aws\s+s3\s+(cp|sync|mv))\b/i
+const HEREDOC        = /<<-?\s*['"]?(\w+)['"]?([^\n]*)\n[\s\S]*?\n\s*\1\b/g
+// personal-data fields (see learn)
+const FIELD = /(?<=^|\\[nrt]|[^\w.\\-])(?<k>[A-Za-z_][\w.-]*)\\?["']?\s*[:=]\s*(?:\\?"(?<q>[^"\\]+)\\?"|\\?["']?(?<v>[^\s"'\\,;]+))/g
+const PII_FIELD = /^(name|email|phone|address|card|dob|govid|zip)$/
+const NOT_VALUE = /^(\[|\$\{|<|\*|(null|true|false|none|undefined|unknown|string|number|boolean|object)$)/i
+const CODE_LIKE = /\(|^[A-Za-z_]\w*(\.\w+)+$/
+// ponytail: memory capped at 5000 values; evict oldest or persist if long sessions need more
+const MAX_TRACKED = 5000
 
 const SECRET_VAR_REF = /\$(env:)?\{?[A-Za-z_0-9]*(TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|ACCESS_?KEY|PRIVATE_?KEY|CREDENTIAL)[A-Za-z_0-9]*\}?/i
 
@@ -62,7 +72,7 @@ const DETECTORS: [string, string, RegExp][] = [
   // 13-16 digits, first 3-6, optional single space/dash between digits; learn() applies the Luhn check
   ['pii',    'Card number',           /(?<!\d)(?<v>[3-6](?:[ -]?\d){12,15})(?!\d)/g],
   // US style with separators, or E.164; 10 bare digits (IDs) do not match
-  ['pii',    'Phone number',          /(?<![\w+-])(?<v>(?:\+?1[ .-]?)?(?:\(\d{3}\)[ .-]?|\d{3}[ .-])\d{3}[ .-]\d{4}|\+\d{11,14})(?!\d)/g],
+  ['pii',    'Phone number',          /(?<![\d+-])(?<v>(?:\+?1[ .-]?)?(?:\(\d{3}\)[ .-]?|\d{3}[ .-])\d{3}[ .-]\d{4}|\+\d{11,14})(?!\d)/g],
 ]
 
 // ================= TYPES =================
@@ -178,8 +188,9 @@ function secretUse(call: Record<string, any>, c: { tool: string; path: string; c
     for (const [name, full] of mem.secretFiles) if (c.cmd.includes(name)) { hits.push('values from ' + full); secretUsed = true }
     const f = c.cmd.match(SENSITIVE_FILE_REF)
     if (f) { hits.push('values from sensitive file ' + f[2]); secretUsed = true }
-    const a = (outbound || SUBSTITUTION.test(c.cmd)) && c.cmd.match(APP_CONFIG_REF)
-    if (a) { hits.push('values from sensitive file ' + a[0].replace(/^[\s"'=\/\(<]/, '')); secretUsed = true }
+    const live = c.cmd.replace(HEREDOC, '$2') // heredoc bodies are text, not commands
+    const a = (APP_OUTBOUND.test(live) || SUBSTITUTION.test(live)) && live.match(APP_CONFIG_REF)
+    if (a) { hits.push('values from sensitive file ' + a[0].replace(/^[\s"'=\/\\(<@]/, '')); secretUsed = true }
     const v = c.cmd.match(SECRET_VAR_REF)
     if (v) { hits.push('secret variable ' + v[0]); secretUsed = true }
   }
@@ -291,20 +302,20 @@ export function learn(text: string, source: string, mem: Memory) {
       if (!v || v.length < 6) continue
       if (kind === 'pii' && IGNORE_PII.test(v)) continue
       if (label === 'Card number' && !luhn(v)) continue
-      if (!mem.tracked.has(v)) mem.tracked.set(v, { kind, label, source })
+      if (!mem.tracked.has(v) && mem.tracked.size < MAX_TRACKED) mem.tracked.set(v, { kind, label, source })
       found.push([kind, label])
     }
   }
   // personal-data fields: key: value, key=value, "key": "value" (also JSON-escaped); secret fields are in DETECTORS
-  const FIELD = /(?<k>[A-Za-z_][\w.-]*)\\?["']?\s*[:=]\s*\\?["']?(?<v>[^\s"'\\,;]+)/g
-  const PII_FIELD = /^(name|email|phone|address|card|dob|govid|zip)$/
   for (const m of text.matchAll(FIELD)) {
-    const { k, v } = m.groups as { k: string; v: string }
+    const { k, q, v: bare } = m.groups as { k: string; q?: string; v?: string }
+    const v = q ?? bare ?? ''
     const cls = classify(k)
-    if (!cls || !PII_FIELD.test(cls) || v.length < 6 || /^(\[|\$\{|null$|true$|false$)/i.test(v)) continue
+    if (!cls || !PII_FIELD.test(cls) || v.length < 6 || NOT_VALUE.test(v) || CODE_LIKE.test(v) || classify(v)) continue
     if (cls === 'email' && IGNORE_PII.test(v)) continue
+    if (mem.tracked.has(v) || mem.tracked.size >= MAX_TRACKED) continue
     const label = 'Personal data (' + k + ')'
-    if (!mem.tracked.has(v)) mem.tracked.set(v, { kind: 'pii', label, source })
+    mem.tracked.set(v, { kind: 'pii', label, source })
     found.push(['pii', label])
   }
   return found
