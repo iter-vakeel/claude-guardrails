@@ -31,13 +31,13 @@ flowchart LR
 
 | Rule | ⛔ Blocks / 🔴🟡 Asks before | ✅ Allowed |
 |---|---|---|
-| 1 · Secret files | 🔴🟡 Using `.env`, `*.pem`, `*.key`... (`source .env`, `cp .env`, `--env-file`) | Reading them |
+| 1 · Secret files | 🔴🟡 Using `.env`, `*.pem`, `*.key`... (`source .env`, `cp .env`, `--env-file`) | Reading them (values masked) |
 | 2 · Secrets in commands / code | 🔴 `curl -H "Bearer $TOKEN"`, a hardcoded password | `System.getenv("DB_PASSWORD")` |
 | 3 · ORM auto-schema | ⛔ `ddl-auto: update` / `create` | `validate`, `none` |
 | 4 · Destructive migrations | ⛔ `DROP`, `RENAME COLUMN`, `TRUNCATE`, type change | `ADD COLUMN`, new table |
 | 5 · Direct DB changes | ⛔ `psql` / `mysql` with `DELETE`, `ALTER`, `DROP`... | `select` |
 | 6 · Risky git push | ⛔ `--force`, push to `main` / `master` / `develop` | Push a feature branch |
-| Personal data | 🟡 Sending a seen email / SSN out | Reading logs that contain it |
+| Personal data | 🟡 Sending a seen email / SSN out | Reading logs that contain it (values masked) |
 
 ⛔ **Blocked** = rules 3-6 are always denied, no dialog. 🔴 **High** = a secret leaves the machine or is
 hardcoded. 🟡 **Medium** = a secret is used locally, or personal data is sent out. To let developers accept
@@ -46,6 +46,13 @@ rules 3-6 instead, set `HARD_BLOCK_POLICY = false` in `hooks/register.ts`.
 > 🧠 **Memory:** when Claude reads a file or command output that contains a secret value, the plugin
 > remembers that value (in memory only, never on disk). If Claude later types the same value into a
 > command or file, the plugin still catches it, even without a `.env` or `$TOKEN` name in sight.
+
+> 🙈 **Masking:** before Claude reads a tool's output (files, search, shell, web, MCP such as Datadog), the
+> plugin masks secret values and personal data, so they never reach the model. Fields are matched by
+> meaning in any naming (`firstName`, `CUSTOMER_FIRST_NAME`, `lineAddress1`), in JSON, logs, `key=value`,
+> XML, DB result tables and CSV. IDs, codes, statuses and timestamps stay visible for debugging, and masks
+> keep their shape: `[email @gmail.com]`, `[phone 10 digits]`, `[zip 5 digits]`, `[card visa …1111]`.
+> If masking fails, the output is withheld. Rules: `hooks/redact.ts`.
 
 ## 🚀 Get started
 
