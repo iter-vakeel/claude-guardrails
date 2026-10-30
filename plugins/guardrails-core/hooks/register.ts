@@ -13,6 +13,7 @@
 import type { Register } from 'claude-code'
 
 import { registerBanner } from './banner'
+import { MASKED_TOOLS, redactResult } from './redact'
 
 // ================= POLICY =================
 const POLICY = 'ACTION BLOCKED - PROHIBITED BY ITERFORGE SECURITY POLICY. This action is not permitted. Do not try to work around this control. Reason: '
@@ -393,6 +394,26 @@ export const register: Register = on => {
         mem.noticed.add(source)
         $.ui.log('NOTICE: ' + source + ' contains ' + summarize(found) + '. Reading is fine; any action that uses it will ask you first.')
         audit($, 'SEEN in ' + source + ': ' + summarize(found))
+      }
+    }
+
+    // ---- AFTER: mask secrets and personal data so Claude never reads the values ----
+    // learn() above still saw the originals, so a later action that uses them is still caught.
+    if (result && !result.deny && !result.isError && MASKED_TOOLS.test(call.tool || '')) {
+      let masked
+      try {
+        masked = redactResult(call.tool, String(call.file_path || call.path || ''), result.result)
+      } catch {
+        // Fail closed: withhold the result rather than pass it on unmasked
+        return { deny: 'guardrails-core could not mask this output, so it was withheld. Skip it and continue with the rest of the task.' }
+      }
+      const kinds = Object.entries(masked.counts).map(([k, n]) => `${n} ${k}`).join(', ')
+      if (kinds) {
+        audit($, 'MASKED in ' + sourceName(call, mem) + ': ' + kinds)
+        return {
+          result: masked.record,
+          context: [...(result.context || []), `guardrails-core masked ${kinds} value(s) in this output. Carry on with the masked output; never try another route to the original values, and leave masked lines untouched when editing.`],
+        }
       }
     }
     return result
