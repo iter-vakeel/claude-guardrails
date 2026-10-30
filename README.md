@@ -13,7 +13,8 @@ tool call Claude makes and asks the developer before anything risky happens.
 flowchart LR
     A["🤖 Claude wants<br/>to run a tool"] --> H{"🛡️ guardrails-core"}
     H -->|"Safe"| OK["✅ Runs"]
-    H -->|"Risky"| D["🔴 / 🟡 Dialog"]
+    H -->|"Policy rule 3-6"| X
+    H -->|"Uses a secret / PII"| D["🔴 / 🟡 Dialog"]
     D -->|"Cancel (default)"| X["⛔ Blocked"]
     D -->|"I accept the risk"| OK
 
@@ -28,19 +29,19 @@ flowchart LR
 
 ## 📏 What it checks
 
-| Rule | 🔴 / 🟡 Asks before | ✅ No dialog |
+| Rule | ⛔ Blocks / 🔴🟡 Asks before | ✅ Allowed |
 |---|---|---|
-| 1 · Secret files | Using `.env`, `*.pem`, `*.key`... (`source .env`, `cp .env`, `--env-file`) | Reading them |
-| 2 · Secrets in commands / code | `curl -H "Bearer $TOKEN"`, a hardcoded password | `System.getenv("DB_PASSWORD")` |
-| 3 · ORM auto-schema | `ddl-auto: update` / `create` | `validate`, `none` |
-| 4 · Destructive migrations | `DROP`, `RENAME COLUMN`, `TRUNCATE`, type change | `ADD COLUMN`, new table |
-| 5 · Direct DB changes | `psql` / `mysql` with `DELETE`, `ALTER`, `DROP`... | `select` |
-| 6 · Risky git push | `--force`, push to `main` / `master` / `develop` | Push a feature branch |
-| Personal data | Sending a seen email / SSN out | Reading logs that contain it |
+| 1 · Secret files | 🔴🟡 Using `.env`, `*.pem`, `*.key`... (`source .env`, `cp .env`, `--env-file`) | Reading them |
+| 2 · Secrets in commands / code | 🔴 `curl -H "Bearer $TOKEN"`, a hardcoded password | `System.getenv("DB_PASSWORD")` |
+| 3 · ORM auto-schema | ⛔ `ddl-auto: update` / `create` | `validate`, `none` |
+| 4 · Destructive migrations | ⛔ `DROP`, `RENAME COLUMN`, `TRUNCATE`, type change | `ADD COLUMN`, new table |
+| 5 · Direct DB changes | ⛔ `psql` / `mysql` with `DELETE`, `ALTER`, `DROP`... | `select` |
+| 6 · Risky git push | ⛔ `--force`, push to `main` / `master` / `develop` | Push a feature branch |
+| Personal data | 🟡 Sending a seen email / SSN out | Reading logs that contain it |
 
-🔴 **High** = a secret leaves the machine or is hardcoded, or rules 3-6. 🟡 **Medium** = a secret is used
-locally, or personal data is sent out. Rules 3-6 can be made hard blocks with `HARD_BLOCK_POLICY = true`
-in `hooks/register.ts`.
+⛔ **Blocked** = rules 3-6 are always denied, no dialog. 🔴 **High** = a secret leaves the machine or is
+hardcoded. 🟡 **Medium** = a secret is used locally, or personal data is sent out. To let developers accept
+rules 3-6 instead, set `HARD_BLOCK_POLICY = false` in `hooks/register.ts`.
 
 > 🧠 **Memory:** when Claude reads a file or command output that contains a secret value, the plugin
 > remembers that value (in memory only, never on disk). If Claude later types the same value into a

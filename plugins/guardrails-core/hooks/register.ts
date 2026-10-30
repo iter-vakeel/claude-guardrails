@@ -1,7 +1,7 @@
 // guardrails-core: ITERFORGE security guardrails for Claude Code, as one hooks module.
 //
 // Policy rules (3-6): ORM auto-schema, destructive migrations, direct DB changes, force push /
-// protected branches. With HARD_BLOCK_POLICY off (now) they ask with a 🔴 dialog; on, they are denied.
+// protected branches. With HARD_BLOCK_POLICY on (now) they are denied; off, they ask with a 🔴 dialog.
 // Either way a refusal gives Claude the policy message and the reason.
 //
 // Ask before use (rules 1-2): reading secrets and PII is allowed. An action that USES a secret, or
@@ -19,7 +19,7 @@ const POLICY = 'ACTION BLOCKED - PROHIBITED BY ITERFORGE SECURITY POLICY. This a
 const ACCEPT = 'I accept the risk - run it'
 const CANCEL = 'Cancel'
 // Rules 3-6: false = ask with a 🔴 dialog (the developer may accept); true = hard block (deny, no dialog)
-export const HARD_BLOCK_POLICY = false
+export const HARD_BLOCK_POLICY = true
 
 const READ_ONLY_TOOLS = ['Read', 'Grep', 'Glob', 'LS', 'NotebookRead']
 const OUTBOUND_TOOLS  = /^(WebFetch|WebSearch|mcp__.*)$/

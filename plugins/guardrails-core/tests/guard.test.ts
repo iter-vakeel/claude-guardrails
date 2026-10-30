@@ -168,25 +168,25 @@ function engine(on: any, choice: string | null, asked: string[]) {
   })
 }
 
-test('hard blocks are off: a policy rule asks 🔴', async () => {
-  expect(HARD_BLOCK_POLICY).toBe(false)
+test('hard blocks are on: policy rules 3-6 are denied', async () => {
+  expect(HARD_BLOCK_POLICY).toBe(true)
 })
 
-test('policy rule: 🔴 dialog; Cancel denies with the policy message', async ($, on) => {
+test('policy rule: denied with the policy message, no dialog', async ($, on) => {
   const asked: string[] = []
-  engine(on, 'Cancel', asked)
+  engine(on, 'I accept the risk - run it', asked)
   const r: any = await $.tool.call({ tool: 'Bash', command: 'git push --force origin feature/x' })
-  expect(asked).toEqual(['🔴 HIGH | Cancel / I accept the risk - run it'])
+  expect(asked).toEqual([])
   expect(JSON.stringify(r)).toContain('ACTION BLOCKED - PROHIBITED BY ITERFORGE SECURITY POLICY')
   expect(JSON.stringify(r)).toContain('git force push is not allowed')
 })
 
-test('policy rule: Accept runs the call', async ($, on) => {
+test('policy rule: cannot be accepted', async ($, on) => {
   const asked: string[] = []
   engine(on, 'I accept the risk - run it', asked)
   const r: any = await $.tool.call({ tool: 'Bash', command: 'psql -h localhost -c "DELETE FROM sku"' })
-  expect(asked).toEqual(['🔴 HIGH | Cancel / I accept the risk - run it'])
-  expect(JSON.stringify(r)).not.toContain('ACTION BLOCKED')
+  expect(asked).toEqual([])
+  expect(JSON.stringify(r)).toContain('ACTION BLOCKED')
 })
 
 test('red dialog, Cancel first; Cancel denies the call', async ($, on) => {
